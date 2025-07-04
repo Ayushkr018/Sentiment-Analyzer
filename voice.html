@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIVA AI Assistant</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .left-panel {
+            width: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .niva-title {
+            font-size: 4.5rem;
+            font-weight: 800;
+            letter-spacing: 0.5em;
+            color: #00d4ff;
+            text-shadow: 0 0 30px rgba(0, 212, 255, 0.8), 0 0 60px rgba(0, 212, 255, 0.5);
+            margin-bottom: 2rem;
+            animation: dynamicGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes dynamicGlow {
+            0% { 
+                color: #00d4ff; 
+                text-shadow: 0 0 30px rgba(0, 212, 255, 0.8), 0 0 60px rgba(0, 212, 255, 0.5);
+            }
+            25% { 
+                color: #ff00ff; 
+                text-shadow: 0 0 35px rgba(255, 0, 255, 0.9), 0 0 70px rgba(255, 0, 255, 0.6);
+            }
+            50% { 
+                color: #00ff88; 
+                text-shadow: 0 0 40px rgba(0, 255, 136, 1), 0 0 80px rgba(0, 255, 136, 0.7);
+            }
+            75% { 
+                color: #ff4400; 
+                text-shadow: 0 0 35px rgba(255, 68, 0, 0.9), 0 0 70px rgba(255, 68, 0, 0.6);
+            }
+            100% { 
+                color: #00d4ff; 
+                text-shadow: 0 0 30px rgba(0, 212, 255, 0.8), 0 0 60px rgba(0, 212, 255, 0.5);
+            }
+        }
+
+        .three-container {
+            width: 300px;
+            height: 300px;
+            margin: 2rem 0;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            box-shadow: 0 0 40px rgba(0, 212, 255, 0.2);
+        }
+
+        .mood-section {
+            margin-top: 2rem;
+            text-align: center;
+        }
+
+        .mood-text {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            animation: moodColorChange 4s ease-in-out infinite;
+        }
+
+        @keyframes moodColorChange {
+            0% { color: #00d4ff; }
+            20% { color: #ff00ff; }
+            40% { color: #00ff88; }
+            60% { color: #ffff00; }
+            80% { color: #ff4400; }
+            100% { color: #00d4ff; }
+        }
+
+        .mic-button {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00d4ff, #0099cc);
+            border: 3px solid transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mic-button::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg, #ff0080, #00ff80, #8000ff, #ff8000, #0080ff, #ff0080);
+            animation: rotateBorder 2s linear infinite;
+            z-index: -1;
+        }
+
+        .mic-button::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            right: 3px;
+            bottom: 3px;
+            background: linear-gradient(135deg, #00d4ff, #0099cc);
+            border-radius: 50%;
+            z-index: -1;
+        }
+
+        @keyframes rotateBorder {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .mic-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+        }
+
+        .mic-button.listening {
+            animation: micPulse 0.8s ease-in-out infinite, discoGlow 1.5s linear infinite;
+            box-shadow: 0 0 50px rgba(255, 68, 0, 0.8), 0 0 100px rgba(0, 255, 136, 0.5), 0 0 150px rgba(255, 0, 255, 0.3);
+        }
+
+        @keyframes micPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        @keyframes discoGlow {
+            0% { 
+                box-shadow: 0 0 50px rgba(255, 68, 0, 0.8), 0 0 100px rgba(0, 255, 136, 0.5), 0 0 150px rgba(255, 0, 255, 0.3);
+            }
+            25% { 
+                box-shadow: 0 0 50px rgba(0, 255, 136, 0.8), 0 0 100px rgba(255, 0, 255, 0.5), 0 0 150px rgba(0, 212, 255, 0.3);
+            }
+            50% { 
+                box-shadow: 0 0 50px rgba(255, 0, 255, 0.8), 0 0 100px rgba(0, 212, 255, 0.5), 0 0 150px rgba(255, 255, 0, 0.3);
+            }
+            75% { 
+                box-shadow: 0 0 50px rgba(0, 212, 255, 0.8), 0 0 100px rgba(255, 255, 0, 0.5), 0 0 150px rgba(255, 68, 0, 0.3);
+            }
+            100% { 
+                box-shadow: 0 0 50px rgba(255, 68, 0, 0.8), 0 0 100px rgba(0, 255, 136, 0.5), 0 0 150px rgba(255, 0, 255, 0.3);
+            }
+        }
+
+        .mic-icon {
+            width: 30px;
+            height: 30px;
+            fill: white;
+        }
+
+        .right-panel {
+            width: 50%;
+            padding: 2rem;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            overflow-y: auto;
+        }
+
+        .chat-header {
+            text-align: right;
+            color: #00d4ff;
+            font-size: 1.4rem;
+            margin-bottom: 2rem;
+            animation: timeGlow 3s ease-in-out infinite;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+        }
+
+        @keyframes timeGlow {
+            0%, 100% { 
+                color: #00d4ff; 
+                text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+            }
+            33% { 
+                color: #ff00ff; 
+                text-shadow: 0 0 25px rgba(255, 0, 255, 0.6);
+            }
+            66% { 
+                color: #00ff88; 
+                text-shadow: 0 0 25px rgba(0, 255, 136, 0.6);
+            }
+        }
+
+        .chat-messages {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .message {
+            padding: 1rem 1.5rem;
+            border-radius: 20px;
+            max-width: 80%;
+            position: relative;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-message {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            align-self: flex-end;
+            color: #ffffff;
+        }
+
+        .ai-message {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            align-self: flex-start;
+            color: #ffffff;
+        }
+
+        .message-time {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 0.5rem;
+        }
+
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: radial-gradient(circle, #00d4ff 0%, transparent 70%);
+            border-radius: 50%;
+            animation: floatParticle 6s ease-in-out infinite;
+            opacity: 0.8;
+        }
+
+        @keyframes floatParticle {
+            0%, 100% {
+                transform: translateY(0px) translateX(0px);
+                opacity: 0.3;
+            }
+            25% {
+                transform: translateY(-30px) translateX(20px);
+                opacity: 0.8;
+            }
+            50% {
+                transform: translateY(-60px) translateX(-10px);
+                opacity: 1;
+            }
+            75% {
+                transform: translateY(-30px) translateX(-30px);
+                opacity: 0.6;
+            }
+        }
+
+        .voice-input-bubble {
+            position: fixed;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 212, 255, 0.1);
+            border: 2px solid rgba(0, 212, 255, 0.5);
+            border-radius: 25px;
+            padding: 15px 25px;
+            color: #00d4ff;
+            font-size: 1.1rem;
+            display: none;
+            animation: pulseVoice 1s ease-in-out infinite;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+        }
+
+        @keyframes pulseVoice {
+            0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.8; }
+            50% { transform: translateX(-50%) scale(1.05); opacity: 1; }
+        }
+
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .star {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: radial-gradient(circle, #ffffff 0%, #00d4ff 50%, transparent 100%);
+            border-radius: 50%;
+            animation: twinkle 3s ease-in-out infinite;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        @keyframes twinkle {
+            0%, 100% { 
+                opacity: 0.3; 
+                transform: scale(1);
+                box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+            }
+            50% { 
+                opacity: 1; 
+                transform: scale(1.8);
+                box-shadow: 0 0 20px rgba(0, 212, 255, 0.8);
+            }
+        }
+
+        .meteor {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: linear-gradient(45deg, #fff, #00d4ff);
+            border-radius: 50%;
+            box-shadow: 0 0 15px #00d4ff, 0 0 30px rgba(0, 212, 255, 0.5);
+            animation: meteorFall 4s linear infinite;
+        }
+
+        @keyframes meteorFall {
+            0% {
+                transform: translateX(0) translateY(0) rotate(45deg);
+                opacity: 1;
+                box-shadow: 0 0 15px #00d4ff, 0 0 30px rgba(0, 212, 255, 0.8);
+            }
+            100% {
+                transform: translateX(400px) translateY(400px) rotate(45deg);
+                opacity: 0;
+                box-shadow: 0 0 5px #00d4ff, 0 0 10px rgba(0, 212, 255, 0.2);
+            }
+        }
+
+        .meteor::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 80px;
+            height: 2px;
+            background: linear-gradient(to right, rgba(255,255,255,0.9), rgba(0,212,255,0.6), transparent);
+            transform: translateX(-80px) rotate(-45deg);
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .aurora {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            background: linear-gradient(45deg, 
+                transparent 0%, 
+                rgba(0, 212, 255, 0.1) 25%, 
+                transparent 50%, 
+                rgba(255, 0, 255, 0.1) 75%, 
+                transparent 100%);
+            animation: auroraMove 8s ease-in-out infinite;
+        }
+
+        @keyframes auroraMove {
+            0%, 100% { 
+                background: linear-gradient(45deg, 
+                    transparent 0%, 
+                    rgba(0, 212, 255, 0.1) 25%, 
+                    transparent 50%, 
+                    rgba(255, 0, 255, 0.1) 75%, 
+                    transparent 100%);
+            }
+            50% { 
+                background: linear-gradient(135deg, 
+                    transparent 0%, 
+                    rgba(255, 0, 255, 0.15) 25%, 
+                    transparent 50%, 
+                    rgba(0, 255, 136, 0.1) 75%, 
+                    transparent 100%);
+            }
+        }
+
+        /* Custom white glowing cursor */
+        * {
+            cursor: none;
+        }
+
+        .custom-cursor {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.8) 30%, rgba(0, 212, 255, 0.4) 70%, transparent 100%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(0, 212, 255, 0.3);
+            animation: cursorPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes cursorPulse {
+            0%, 100% { 
+                transform: translate(-50%, -50%) scale(1);
+                box-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(0, 212, 255, 0.3);
+            }
+            50% { 
+                transform: translate(-50%, -50%) scale(1.2);
+                box-shadow: 0 0 30px rgba(255, 255, 255, 1), 0 0 60px rgba(0, 212, 255, 0.5);
+            }
+        }
+
+        .custom-cursor.clicked {
+            animation: cursorClick 0.3s ease-out;
+        }
+
+        @keyframes cursorClick {
+            0% { 
+                transform: translate(-50%, -50%) scale(1);
+            }
+            50% { 
+                transform: translate(-50%, -50%) scale(1.5);
+                box-shadow: 0 0 40px rgba(255, 255, 255, 1), 0 0 80px rgba(0, 212, 255, 0.7);
+            }
+            100% { 
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="custom-cursor" id="customCursor"></div>
+    <div class="aurora"></div>
+    <div class="stars" id="stars"></div>
+    <div class="particles" id="particles"></div>
+    
+    <div class="container">
+        <div class="left-panel">
+            <h1 class="niva-title">NIVA</h1>
+            
+            <div class="three-container" id="three-container"></div>
+            
+            <div class="mood-section">
+                <div class="mood-text">Mood: <span id="mood">Ready</span></div>
+                <button class="mic-button" id="mic-button" onclick="toggleMic()">
+                    <svg class="mic-icon" viewBox="0 0 24 24">
+                        <path d="M12 1c-1.6 0-3 1.4-3 3v8c0 1.6 1.4 3 3 3s3-1.4 3-3V4c0-1.6-1.4-3-3-3z"/>
+                        <path d="M19 10v2c0 3.9-3.1 7-7 7s-7-3.1-7-7v-2"/>
+                        <path d="M12 19v4M8 23h8"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="chat-header">
+                <div id="current-time">June 27, 7:45 PM</div>
+            </div>
+            
+            <div class="chat-messages" id="chat-messages"></div>
+        </div>
+    </div>
+
+    <div class="voice-input-bubble" id="voice-bubble">
+        🎤 Listening... Speak now
+    </div>
+
+    <script>
+        // Three.js 3D Object Setup
+        let scene, camera, renderer, torus, particles;
+        let isListening = false;
+
+        function initThreeJS() {
+            const container = document.getElementById('three-container');
+            
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(300, 300);
+            renderer.setClearColor(0x000000, 0);
+            container.appendChild(renderer.domElement);
+
+            // Create glowing orb like in the image
+            const orbGroup = new THREE.Group();
+            
+            // Inner core (pink/purple)
+            const coreGeometry = new THREE.SphereGeometry(0.8, 32, 32);
+            const coreMaterial = new THREE.MeshBasicMaterial({
+                color: 0xff44ff,
+                transparent: true,
+                opacity: 0.9
+            });
+            const core = new THREE.Mesh(coreGeometry, coreMaterial);
+            orbGroup.add(core);
+            
+            // Middle glow layer (blue-purple)
+            const glowGeometry = new THREE.SphereGeometry(1.2, 32, 32);
+            const glowMaterial = new THREE.MeshBasicMaterial({
+                color: 0x4444ff,
+                transparent: true,
+                opacity: 0.4
+            });
+            const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+            orbGroup.add(glow);
+            
+            // Outer ring effect
+            const ringGeometry = new THREE.TorusGeometry(1.4, 0.1, 8, 32);
+            const ringMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00d4ff,
+                transparent: true,
+                opacity: 0.8
+            });
+            const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+            orbGroup.add(ring);
+            
+            // Additional outer glow
+            const outerGlowGeometry = new THREE.SphereGeometry(1.8, 32, 32);
+            const outerGlowMaterial = new THREE.MeshBasicMaterial({
+                color: 0x0088ff,
+                transparent: true,
+                opacity: 0.2
+            });
+            const outerGlow = new THREE.Mesh(outerGlowGeometry, outerGlowMaterial);
+            orbGroup.add(outerGlow);
+            
+            torus = orbGroup; // Rename for compatibility
+            scene.add(orbGroup);
+
+            // Create swirling particle system around orb
+            const particleGeometry = new THREE.BufferGeometry();
+            const particleCount = 500;
+            const positions = new Float32Array(particleCount * 3);
+            
+            for (let i = 0; i < particleCount; i++) {
+                const radius = 2 + Math.random() * 2;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.random() * Math.PI;
+                
+                positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+                positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+                positions[i * 3 + 2] = radius * Math.cos(phi);
+            }
+            
+            particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            
+            const particleMaterial = new THREE.PointsMaterial({
+                color: 0x00d4ff,
+                size: 0.05,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            particles = new THREE.Points(particleGeometry, particleMaterial);
+            scene.add(particles);
+
+            camera.position.z = 5;
+            
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Rotate the entire orb group slowly
+            torus.rotation.y += 0.005;
+            
+            // Make inner core pulse
+            const pulseFactor = 1 + Math.sin(Date.now() * 0.003) * 0.1;
+            torus.children[0].scale.set(pulseFactor, pulseFactor, pulseFactor);
+            
+            // Rotate the ring separately
+            torus.children[2].rotation.x += 0.02;
+            torus.children[2].rotation.z += 0.01;
+            
+            // Animate particles in spiral motion
+            particles.rotation.y += 0.01;
+            particles.rotation.x += 0.005;
+            
+            // Enhanced pulsing effect when listening
+            if (isListening) {
+                const scale = 1 + Math.sin(Date.now() * 0.01) * 0.2;
+                torus.scale.set(scale, scale, scale);
+                
+                // Change colors when listening
+                torus.children[0].material.color.setHex(0xff0088);
+                torus.children[1].material.color.setHex(0x8800ff);
+            } else {
+                torus.scale.set(1, 1, 1);
+                torus.children[0].material.color.setHex(0xff44ff);
+                torus.children[1].material.color.setHex(0x4444ff);
+            }
+            
+            renderer.render(scene, camera);
+        }
+
+        // Create stars and meteors background
+        function createStarsAndMeteors() {
+            const starsContainer = document.getElementById('stars');
+            
+            // Create more visible stars
+            for (let i = 0; i < 150; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 3 + 's';
+                star.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                starsContainer.appendChild(star);
+            }
+            
+            // Create meteors more frequently
+            setInterval(() => {
+                const meteorCount = Math.floor(Math.random() * 4) + 8; // 8-11 meteors
+                for (let i = 0; i < meteorCount; i++) {
+                    setTimeout(() => {
+                        const meteor = document.createElement('div');
+                        meteor.className = 'meteor';
+                        meteor.style.left = Math.random() * 100 + '%';
+                        meteor.style.top = Math.random() * 50 + '%';
+                        meteor.style.animationDuration = (Math.random() * 2 + 3) + 's';
+                        starsContainer.appendChild(meteor);
+                        
+                        // Remove meteor after animation
+                        setTimeout(() => {
+                            if (meteor.parentNode) {
+                                meteor.parentNode.removeChild(meteor);
+                            }
+                        }, 5000);
+                    }, i * 150);
+                }
+            }, 6000);
+        }
+
+        // Create more visible floating particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = (Math.random() * 3 + 4) + 's';
+                
+                // Random colors for particles
+                const colors = ['#00d4ff', '#ff00ff', '#00ff88', '#ffff00', '#ff4400'];
+                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.background = `radial-gradient(circle, ${randomColor} 0%, transparent 70%)`;
+                
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Update time with more dynamic formatting
+        function updateTime() {
+            const now = new Date();
+            const options = {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            };
+            const timeString = now.toLocaleString('en-US', options);
+            document.getElementById('current-time').textContent = timeString;
+        }
+
+        // Enhanced mic functionality
+        function toggleMic() {
+            isListening = !isListening;
+            const micButton = document.getElementById('mic-button');
+            const voiceBubble = document.getElementById('voice-bubble');
+            
+            if (isListening) {
+                micButton.classList.add('listening');
+                document.getElementById('mood').textContent = 'Listening';
+                
+                // Show voice input bubble
+                voiceBubble.style.display = 'block';
+                
+                // Simulate voice input after 3 seconds
+                setTimeout(() => {
+                    if (isListening) {
+                        voiceBubble.textContent = '🎤 "Hello NIVA, how are you?"';
+                        
+                        // Add voice message to chat
+                        setTimeout(() => {
+                            addMessage("Hello NIVA, how are you?", 'user', true);
+                            voiceBubble.style.display = 'none';
+                            
+                            // Auto reply from AI
+                            setTimeout(() => {
+                                addMessage("Hello! I'm doing great! How can I help you today?", 'ai');
+                            }, 1500);
+                            
+                            // Auto turn off mic
+                            setTimeout(() => {
+                                if (isListening) toggleMic();
+                            }, 2000);
+                        }, 2000);
+                    }
+                }, 3000);
+                
+            } else {
+                micButton.classList.remove('listening');
+                document.getElementById('mood').textContent = 'Ready';
+                voiceBubble.style.display = 'none';
+            }
+        }
+
+        function addMessage(text, type, isVoice = false) {
+            const messagesContainer = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}-message`;
+            
+            const now = new Date();
+            const timeString = now.toLocaleString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
+            
+            const voiceIcon = isVoice ? '🎤 ' : '';
+            
+            messageDiv.innerHTML = `
+                ${voiceIcon}${text}
+                <div class="message-time">${timeString}</div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Initialize everything
+        window.addEventListener('load', () => {
+            initThreeJS();
+            createParticles();
+            createStarsAndMeteors();
+            updateTime();
+            setInterval(updateTime, 1000); // Update every second for dynamic time
+            initCustomCursor();
+        });
+
+        // Custom cursor functionality
+        function initCustomCursor() {
+            const cursor = document.getElementById('customCursor');
+            
+            // Follow mouse movement
+            document.addEventListener('mousemove', (e) => {
+                cursor.style.left = e.clientX + 'px';
+                cursor.style.top = e.clientY + 'px';
+            });
+            
+            // Click effect
+            document.addEventListener('mousedown', () => {
+                cursor.classList.add('clicked');
+            });
+            
+            document.addEventListener('mouseup', () => {
+                setTimeout(() => {
+                    cursor.classList.remove('clicked');
+                }, 300);
+            });
+            
+            // Hide cursor when mouse leaves window
+            document.addEventListener('mouseleave', () => {
+                cursor.style.opacity = '0';
+            });
+            
+            document.addEventListener('mouseenter', () => {
+                cursor.style.opacity = '1';
+            });
+        }
+    </script>
+</body>
+</html>
