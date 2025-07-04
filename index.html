@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Niva – Sentiment & Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Material Icons for quick glyphs -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --secondary: #ec4899;
+      --accent: #06b6d4;
+      --bg: #0f0f23;
+      --card: rgba(255, 255, 255, 0.1);
+      --text: #ffffff;
+      --text-muted: rgba(255, 255, 255, 0.7);
+      --border: rgba(255, 255, 255, 0.2);
+      --glass: rgba(255, 255, 255, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Poppins', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Animated Background */
+    .bg-animation {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      background: linear-gradient(-45deg, #0f0f23, #1e1b4b, #312e81, #1e1b4b);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Floating particles */
+    .particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: rgba(99, 102, 241, 0.6);
+      border-radius: 50%;
+      animation: float 20s infinite linear;
+    }
+
+    @keyframes float {
+      0% {
+        transform: translateY(100vh) rotate(0deg);
+        opacity: 0;
+      }
+      10% {
+        opacity: 1;
+      }
+      90% {
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(-100px) rotate(360deg);
+        opacity: 0;
+      }
+    }
+
+    /* Glass morphism effects */
+    .glass {
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    body.overlay-open #overlay {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Overlay */
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 2000;
+      backdrop-filter: blur(4px);
+    }
+
+    /* Sidebar */
+    #sidebar {
+      position: fixed;
+      top: 0;
+      left: -340px;
+      width: 340px;
+      height: 100vh;
+      padding: 2rem;
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 3000;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+    }
+
+    #sidebar.open {
+      left: 0;
+    }
+
+    #sidebar h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text);
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    #sidebar h2 button {
+      margin-left: auto;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      cursor: pointer;
+      font-size: 1.5rem;
+      line-height: 1;
+      color: var(--text);
+      border-radius: 8px;
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      transition: all 0.3s ease;
+    }
+
+    #sidebar h2 button:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: rotate(90deg);
+    }
+
+    #historyList {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .history-item {
+      background: var(--glass);
+      border: 1px solid var(--border);
+      padding: 1rem;
+      border-radius: 12px;
+      position: relative;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .history-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+    }
+
+    .delete-entry {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(239, 68, 68, 0.2);
+      border: none;
+      cursor: pointer;
+      color: #ef4444;
+      border-radius: 6px;
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      transition: all 0.3s ease;
+    }
+
+    .delete-entry:hover {
+      background: rgba(239, 68, 68, 0.4);
+      transform: scale(1.1);
+    }
+
+    /* Header */
+    header {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+      position: relative;
+      text-align: center;
+    }
+
+    #hamburger {
+      position: absolute;
+      left: 1rem;
+      top: 2rem;
+      background: var(--glass);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      width: 50px;
+      height: 50px;
+      border-radius: 12px;
+      z-index: 3500;
+      display: grid;
+      place-items: center;
+      transition: all 0.3s ease;
+    }
+
+    #hamburger:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: scale(1.05);
+    }
+
+    .bar {
+      display: block;
+      width: 20px;
+      height: 3px;
+      background: var(--text);
+      margin: 4px 0;
+      transition: 0.3s;
+      border-radius: 2px;
+    }
+
+    #hamburger.open .bar:nth-child(1) {
+      transform: translateY(7px) rotate(45deg);
+    }
+    #hamburger.open .bar:nth-child(2) {
+      opacity: 0;
+    }
+    #hamburger.open .bar:nth-child(3) {
+      transform: translateY(-7px) rotate(-45deg);
+    }
+
+    /* Animated Logo */
+    #logo {
+      font-size: 3.5rem;
+      font-weight: 800;
+      background: linear-gradient(45deg, #6366f1, #8b5cf6, #ec4899, #06b6d4);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: logoGlow 3s ease-in-out infinite;
+      text-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
+      position: relative;
+    }
+
+    @keyframes logoGlow {
+      0%, 100% {
+        background-position: 0% 50%;
+        filter: brightness(1);
+      }
+      50% {
+        background-position: 100% 50%;
+        filter: brightness(1.2);
+      }
+    }
+
+    /* Main Card */
+    .card {
+      max-width: 800px;
+      margin: 0 auto 4rem;
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      padding: 2.5rem;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      position: relative;
+      animation: cardFloat 6s ease-in-out infinite;
+    }
+
+    @keyframes cardFloat {
+      0%, 100% {
+        transform: translateY(0px);
+      }
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+
+    .tagline {
+      margin: 1rem 0 1.5rem;
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      text-align: center;
+      font-weight: 400;
+    }
+
+    /* Chat Window */
+    #chatWindow {
+      max-height: 450px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      background: rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(10px);
+      margin-bottom: 1.5rem;
+    }
+
+    #chatWindow::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #chatWindow::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+    }
+
+    #chatWindow::-webkit-scrollbar-thumb {
+      background: var(--primary);
+      border-radius: 3px;
+    }
+
+    .bubble {
+      max-width: 85%;
+      padding: 1rem 1.5rem;
+      border-radius: 20px;
+      font-size: 1rem;
+      line-height: 1.5;
+      word-wrap: break-word;
+      animation: bubbleIn 0.4s ease-out;
+      position: relative;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    @keyframes bubbleIn {
+      0% {
+        opacity: 0;
+        transform: translateY(20px) scale(0.9);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .user-bubble {
+      align-self: flex-end;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: #fff;
+      border-bottom-right-radius: 6px;
+    }
+
+    .bot-bubble {
+      align-self: flex-start;
+      background: var(--glass);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-bottom-left-radius: 6px;
+    }
+
+    /* Message Composer */
+    .composer {
+      display: flex;
+      align-items: flex-end;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    #messageBox {
+      flex: 1;
+      min-height: 54px;
+      max-height: 120px;
+      padding: 1rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      resize: vertical;
+      font-size: 1rem;
+      background: var(--glass);
+      backdrop-filter: blur(10px);
+      color: var(--text);
+      font-family: inherit;
+      transition: all 0.3s ease;
+    }
+
+    #messageBox:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+    }
+
+    #messageBox::placeholder {
+      color: var(--text-muted);
+    }
+
+    .right-buttons {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .icon-btn {
+      border: none;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #fff;
+      border-radius: 50%;
+      width: 54px;
+      height: 54px;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      font-size: 1.5rem;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    }
+
+    .icon-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.6);
+    }
+
+    .icon-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Analyze Button */
+    #analyzeBtn {
+      display: block;
+      width: 100%;
+      padding: 1rem 0;
+      background: linear-gradient(45deg, var(--primary), var(--secondary));
+      color: #fff;
+      font-weight: 600;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: inherit;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+    }
+
+    #analyzeBtn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.6s ease;
+    }
+
+    #analyzeBtn:hover::before {
+      left: 100%;
+    }
+
+    #analyzeBtn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 35px rgba(99, 102, 241, 0.6);
+    }
+
+    #analyzeBtn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Sentiment Result */
+    #sentimentResult {
+      margin-top: 1rem;
+      padding: 1rem;
+      font-weight: 600;
+      background: var(--glass);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      text-align: center;
+      color: var(--primary);
+      display: none;
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+      0% {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      header, .card {
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+
+      #logo {
+        font-size: 2.5rem;
+      }
+
+      .card {
+        padding: 1.5rem;
+        margin: 0 1rem 2rem;
+      }
+
+      #sidebar {
+        width: 100vw;
+        left: -100vw;
+      }
+    }
+
+    /* Pulse animation for loading states */
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Animated Background -->
+  <div class="bg-animation"></div>
+  
+  <!-- Floating Particles -->
+  <div class="particles" id="particles"></div>
+
+  <!-- Overlay dimmer -->
+  <div id="overlay"></div>
+
+  <!-- Sidebar history -->
+  <aside id="sidebar" class="glass">
+    <h2>
+      <span class="material-symbols-outlined">history</span>
+      Chat History
+      <button id="closeSidebar" title="Close history">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </h2>
+    <ul id="historyList"></ul>
+  </aside>
+
+  <!-- Header -->
+  <header>
+    <button id="hamburger" aria-label="Open history">
+      <span class="bar"></span>
+      <span class="bar"></span>
+      <span class="bar"></span>
+    </button>
+    <div id="logo">Niva</div>
+  </header>
+
+  <!-- Main card -->
+  <main class="card glass">
+    <p class="tagline">✨ Express yourself and get responses tailored to your emotions ✨</p>
+
+    <!-- Chat window -->
+    <div id="chatWindow"></div>
+
+    <!-- Message composer -->
+    <form id="chatForm" class="composer" onsubmit="return false;">
+      <textarea id="messageBox" rows="2" placeholder="Share your thoughts with Niva..."></textarea>
+      <div class="right-buttons">
+        <button type="button" id="sendBtn" class="icon-btn" title="Send message">
+          <span class="material-symbols-outlined">send</span>
+        </button>
+        <button type="button" id="voiceBtn" class="icon-btn" title="Voice mode">
+          <span class="material-symbols-outlined">mic</span>
+        </button>
+      </div>
+    </form>
+
+    <button id="analyzeBtn" type="button">
+      <span class="material-symbols-outlined" style="margin-right: 8px;">psychology</span>
+      Analyze Sentiment
+    </button>
+
+    <div id="sentimentResult"></div>
+  </main>
+
+  <script>
+    // Create floating particles
+    function createParticles() {
+      const particlesContainer = document.getElementById('particles');
+      const particleCount = 50;
+
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.animationDelay = Math.random() * 20 + 's';
+        particle.style.animationDuration = (Math.random() * 10 + 15) + 's';
+        
+        // Random colors for particles
+        const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#06b6d4'];
+        particle.style.background = colors[Math.floor(Math.random() * colors.length)] + '66';
+        
+        particlesContainer.appendChild(particle);
+      }
+    }
+
+    // Initialize particles
+    createParticles();
+
+    const $ = sel => document.querySelector(sel);
+    const userId = 'u-' + Date.now();
+    let history = [];
+
+    /* ========= Sidebar & Overlay ========= */
+    const sidebar = $('#sidebar');
+    const overlay = $('#overlay');
+    const hamburger = $('#hamburger');
+    const closeSidebarBtn = $('#closeSidebar');
+
+    function openSidebar() {
+      sidebar.classList.add('open');
+      hamburger.classList.add('open');
+      document.body.classList.add('overlay-open');
+    }
+
+    function closeSidebar() {
+      sidebar.classList.remove('open');
+      hamburger.classList.remove('open');
+      document.body.classList.remove('overlay-open');
+    }
+
+    hamburger.addEventListener('click', () => {
+      sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+    });
+    closeSidebarBtn.addEventListener('click', closeSidebar);
+    overlay.addEventListener('click', closeSidebar);
+
+    /* ========= History Management ========= */
+    function renderHistory() {
+      const list = $('#historyList');
+      list.innerHTML = '';
+      
+      if (history.length === 0) {
+        list.innerHTML = '<li style="text-align: center; color: var(--text-muted); font-style: italic;">No conversations yet</li>';
+        return;
+      }
+      
+      history.slice().reverse().forEach((item, idx) => {
+        const li = document.createElement('li');
+        li.className = 'history-item';
+        
+        const sentimentIcon = getSentimentIcon(item.sentiment);
+        
+        li.innerHTML = `
+          <button class="delete-entry" title="Delete entry" data-idx="${idx}">
+            <span class="material-symbols-outlined" style="font-size:18px;">delete</span>
+          </button>
+          <div style="margin-bottom: 8px;">
+            <strong style="color: var(--primary);">You:</strong> ${item.user.length > 50 ? item.user.substring(0, 50) + '...' : item.user}
+          </div>
+          <div style="margin-bottom: 8px;">
+            <strong style="color: var(--accent);">Niva:</strong> ${item.bot.length > 50 ? item.bot.substring(0, 50) + '...' : item.bot}
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: 0.9rem;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">${sentimentIcon}</span>
+            <em>${item.sentiment}</em>
+          </div>
+        `;
+        list.appendChild(li);
+      });
+    }
+
+    function getSentimentIcon(sentiment) {
+      const sentimentLower = sentiment.toLowerCase();
+      if (sentimentLower.includes('positive') || sentimentLower.includes('happy')) return 'sentiment_satisfied';
+      if (sentimentLower.includes('negative') || sentimentLower.includes('sad')) return 'sentiment_dissatisfied';
+      if (sentimentLower.includes('neutral')) return 'sentiment_neutral';
+      return 'psychology';
+    }
+
+    $('#historyList').addEventListener('click', (e) => {
+      if (e.target.closest('.delete-entry')) {
+        const idx = +e.target.closest('.delete-entry').dataset.idx;
+        history.splice(history.length - 1 - idx, 1);
+        renderHistory();
+      }
+    });
+
+    /* ========= Chat Logic ========= */
+    const baseURL = window.location.origin + '/';
+    const chatWindow = $('#chatWindow');
+
+    function addBubble(text, type) {
+      const div = document.createElement('div');
+      div.className = `bubble ${type}-bubble`;
+      div.textContent = text;
+      chatWindow.appendChild(div);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function showTypingIndicator() {
+      const typing = document.createElement('div');
+      typing.className = 'bubble bot-bubble typing-indicator';
+      typing.innerHTML = '<span style="opacity: 0.7;">Niva is thinking...</span>';
+      typing.id = 'typing-indicator';
+      chatWindow.appendChild(typing);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function removeTypingIndicator() {
+      const typing = document.getElementById('typing-indicator');
+      if (typing) typing.remove();
+    }
+
+    async function send(text, showSentiment = false) {
+      if (!text.trim()) return;
+      
+      addBubble(text, 'user');
+      $('#messageBox').value = '';
+      $('#analyzeBtn').disabled = true;
+      $('#analyzeBtn').classList.add('pulse');
+      
+      showTypingIndicator();
+      
+      try {
+        // Call backend /chat API
+        const response = await fetch('/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            user_id: userId,
+            text: text
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        
+        const data = await response.json();
+        
+        removeTypingIndicator();
+        addBubble(data.reply, 'bot');
+        
+        history.push({
+          user: text,
+          bot: data.reply,
+          sentiment: data.sentiment || 'Unknown'
+        });
+        renderHistory();
+        
+        const sentimentResult = $('#sentimentResult');
+        if (showSentiment) {
+          const icon = getSentimentIcon(data.sentiment || 'Unknown');
+          sentimentResult.innerHTML = `
+            <span class="material-symbols-outlined" style="margin-right: 8px;">${icon}</span>
+            Detected Sentiment: <strong>${data.sentiment || 'Unknown'}</strong>
+          `;
+          sentimentResult.style.display = 'block';
+        } else {
+          sentimentResult.style.display = 'none';
+        }
+        
+      } catch (err) {
+        removeTypingIndicator();
+        alert('Sorry, there was an error processing your message.');
+      } finally {
+        $('#analyzeBtn').disabled = false;
+        $('#analyzeBtn').classList.remove('pulse');
+      }
+    }
+
+    /* ========= Event Listeners ========= */
+    $('#sendBtn').addEventListener('click', () => {
+      send($('#messageBox').value.trim(), false);
+    });
+
+    $('#voiceBtn').addEventListener('click', () => {
+      // Open voice.html in the same tab
+      window.location.href = 'voice.html';
+    });
+
+    $('#messageBox').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        $('#sendBtn').click();
+      }
+    });
+
+    $('#analyzeBtn').addEventListener('click', () => {
+      send($('#messageBox').value.trim(), true);
+    });
+
+    // Auto-resize textarea
+    $('#messageBox').addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    });
+
+    // Welcome message
+    setTimeout(() => {
+      addBubble("Hello! I'm Niva, your AI companion. I'm here to understand your emotions and provide thoughtful responses. How are you feeling today?", 'bot');
+    }, 1000);
+  </script>
+</body>
+</html>
