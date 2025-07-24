@@ -183,7 +183,7 @@ class ImprovedNivaVoiceAssistant:
     def _initialize_gemini_ai(self):
         """Initialize Gemini AI with better error handling"""
         try:
-            genai.configure(api_key="AIzaSyAIb4W_ev8Ur2QZBeN73tdc5EOA4_YhDiQ")
+            genai.configure(api_key="your key")
             
             generation_config = {
                 "temperature": 0.7,
