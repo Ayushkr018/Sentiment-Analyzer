@@ -69,7 +69,7 @@ except Exception as e:
     sentiment_analyzer = None
 
 # Initialize Cohere ClientV2
-COHERE_API_KEY = "mxeVQKXKvu0K1MOM3vEOQLBw0Jp0n0AmCrvu9vUj"  # Replace with your actual Cohere API key
+COHERE_API_KEY = ""  # Replace with your actual Cohere API key
 try:
     client = ClientV2(api_key=COHERE_API_KEY)
     logger.info("Cohere client initialized successfully")
